@@ -1,0 +1,207 @@
+import { aiStructuredOutputSchema, type AIStructuredOutput, type AnalyzeTextInput, type TranscriptionResult } from "@/lib/ai/types";
+import { detectLanguageFromText, runHeuristicNlp } from "@/lib/ai/heuristic-nlp";
+
+function mapLanguageToValsea(language: string): string {
+  const normalized = language.trim().toLowerCase();
+  if (normalized === "auto") return "english";
+  if (normalized.includes("sinhala") || normalized === "si") return "sinhala";
+  if (normalized.includes("tamil") || normalized === "ta") return "tamil";
+  if (normalized.includes("mixed")) return "english";
+  return "english";
+}
+
+export async function transcribeAudioViaValsea(
+  audioUrl: string,
+  languageHint: "auto" | "english" | "sinhala" | "tamil" = "auto",
+): Promise<TranscriptionResult> {
+  const apiUrl = process.env.VALSEA_API_URL;
+  const apiKey = process.env.VALSEA_API_KEY;
+
+  if (!apiUrl || !apiKey) {
+    const fallbackText = "My package still has not arrived, three days now, please check urgently.";
+    return {
+      transcript: fallbackText,
+      language: detectLanguageFromText(fallbackText),
+      confidence: 0.72,
+      rawResponse: { provider: "mock" },
+    };
+  }
+
+  const base = apiUrl.replace(/\/$/, "");
+  const candidatePaths = ["/v1/audio/transcriptions"];
+  let json: {
+    transcript?: string;
+    text?: string;
+    language?: string;
+    confidence?: number;
+  } | null = null;
+  let lastStatus: number | null = null;
+  let lastReason: string | null = null;
+
+  for (const path of candidatePaths) {
+    let response: Response | null = null;
+
+    if (path === "/v1/audio/transcriptions") {
+      try {
+        const audioResponse = await fetch(audioUrl);
+        if (!audioResponse.ok) {
+          lastStatus = audioResponse.status;
+          lastReason = "source_audio_unreachable";
+          continue;
+        }
+
+        const audioBlob = await audioResponse.blob();
+        const formData = new FormData();
+        formData.append("file", audioBlob, "complaint-audio.webm");
+        formData.append("model", "valsea-transcribe");
+        formData.append("language", mapLanguageToValsea(languageHint));
+        formData.append("response_format", "json");
+        formData.append("enable_correction", "true");
+        formData.append("enable_tags", "true");
+
+        response = await fetch(`${base}${path}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: formData,
+        });
+      } catch {
+        lastReason = "source_audio_fetch_failed";
+        continue;
+      }
+    }
+
+    if (!response || !response.ok) {
+      lastStatus = response?.status ?? lastStatus;
+      lastReason = "valsea_stt_http_error";
+      continue;
+    }
+
+    json = (await response.json()) as {
+      transcript?: string;
+      text?: string;
+      language?: string;
+      confidence?: number;
+    };
+    break;
+  }
+
+  if (!json) {
+    const fallbackText = "Voice complaint received. Automatic transcription is currently unavailable.";
+    return {
+      transcript: fallbackText,
+      language: detectLanguageFromText(fallbackText),
+      confidence: 0.4,
+      rawResponse: {
+        provider: "fallback",
+        reason: `${lastReason ?? "valsea_stt_unavailable"}${lastStatus ? `_status_${lastStatus}` : ""}`,
+        audioUrl,
+      },
+    };
+  }
+
+  const transcript = json.transcript ?? json.text ?? "";
+
+  if (!transcript) {
+    const fallbackText = "Voice complaint received. Automatic transcription returned empty content.";
+    return {
+      transcript: fallbackText,
+      language: detectLanguageFromText(fallbackText),
+      confidence: 0.35,
+      rawResponse: {
+        provider: "fallback",
+        reason: "valsea_stt_empty_transcript",
+        audioUrl,
+      },
+    };
+  }
+
+  const language =
+    json.language?.toLowerCase() === "si"
+      ? "Sinhala"
+      : json.language?.toLowerCase() === "ta"
+        ? "Tamil"
+        : json.language?.toLowerCase() === "mixed"
+          ? "Mixed"
+          : detectLanguageFromText(transcript);
+
+  return {
+    transcript,
+    language,
+    confidence: json.confidence,
+    rawResponse: json,
+  };
+}
+
+export async function analyzeTextViaValsea(input: AnalyzeTextInput): Promise<AIStructuredOutput> {
+  const apiUrl = process.env.VALSEA_API_URL;
+  const apiKey = process.env.VALSEA_API_KEY;
+
+  if (!apiUrl || !apiKey) {
+    return runHeuristicNlp(input.transcript, input.detectedLanguage);
+  }
+
+  const base = apiUrl.replace(/\/$/, "");
+  const fallback = runHeuristicNlp(input.transcript, input.detectedLanguage);
+
+  // Try legacy structured endpoint if available for this account/version.
+  const legacyResponse = await fetch(`${base}/analyze-text`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      text: input.transcript,
+      language_hint: input.detectedLanguage,
+      tasks: ["intent", "sentiment", "urgency", "entities", "recommended_action"],
+      output_format: "voice2action_v1",
+    }),
+  });
+
+  if (legacyResponse.ok) {
+    const json = await legacyResponse.json();
+    const parsed = aiStructuredOutputSchema.safeParse(json);
+    if (parsed.success) {
+      return parsed.data;
+    }
+  }
+
+  // Fallback to documented sentiment endpoint and enrich heuristic output.
+  const sentimentResponse = await fetch(`${base}/v1/sentiment`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "valsea-sentiment",
+      transcript: input.transcript,
+      language: mapLanguageToValsea(input.detectedLanguage),
+      response_format: "json",
+    }),
+  });
+
+  if (!sentimentResponse.ok) {
+    return fallback;
+  }
+
+  const sentimentJson = (await sentimentResponse.json()) as {
+    sentiment?: string;
+    label?: string;
+    polarity?: string;
+  };
+
+  const providerSentiment =
+    sentimentJson.sentiment ?? sentimentJson.label ?? sentimentJson.polarity;
+
+  if (!providerSentiment || typeof providerSentiment !== "string") {
+    return fallback;
+  }
+
+  return aiStructuredOutputSchema.parse({
+    ...fallback,
+    sentiment: providerSentiment.toLowerCase(),
+  });
+}

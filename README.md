@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Voice2Action
 
-## Getting Started
+Voice2Action is a multilingual AI-powered voice-to-workflow automation platform for customer support operations.
 
-First, run the development server:
+## Core Capabilities
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Browser voice recording + file upload intake
+- Multilingual transcription workflow (English, Sinhala, Tamil, mixed)
+- NLP pipeline: language, intent, sentiment, urgency, entities
+- Automated ticket creation, priority assignment, escalation, and assignment
+- Role-based dashboards for User, Support Agent, and Admin
+- Analytics with trend and distribution charts
+- In-app notifications and user settings management
+
+## Tech Stack
+
+- Frontend: Next.js App Router, TypeScript, Tailwind CSS, Framer Motion
+- Backend: Next.js route handlers, service layer architecture
+- Database: Prisma + MongoDB
+- Auth: Clerk
+- Charts: Recharts
+- Validation: Zod
+
+## Project Structure
+
+```text
+src/
+  app/
+    (marketing)/
+    (auth)/
+    (platform)/
+    api/
+  features/
+    audio/
+    tickets/
+    dashboard/
+    analytics/
+    notifications/
+    settings/
+  components/
+    layout/
+    shared/
+    ui/
+  server/
+    auth/
+    db/
+    pipeline/
+    security/
+    services/
+  lib/
+    ai/
+    audio/
+    auth/
+    constants/
+    http/
+    storage/
+    utils/
+    validators/
+  config/
+  types/
+
+prisma/
+  schema.prisma
+  seed/index.ts
+
+docs/
+  architecture.md
+  deployment.md
+  test-plan.md
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies
+   - `npm install`
+2. Configure environment
+   - Copy `.env.example` to `.env`
+   - Fill in Clerk + DB values at minimum
+3. Generate Prisma client
+   - `npm run db:generate`
+4. Sync schema
+   - `npm run db:push`
+5. Seed demo data (optional but recommended)
+   - `npm run db:seed`
+6. Run app
+   - `npm run dev`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+- `npm run dev` - start development server
+- `npm run build` - production build
+- `npm run start` - run production server
+- `npm run lint` - lint codebase
+- `npm run typecheck` - TypeScript checks
+- `npm run check` - lint + typecheck
+- `npm run db:generate` - generate Prisma client
+- `npm run db:push` - sync DB schema
+- `npm run db:seed` - seed demo data
 
-To learn more about Next.js, take a look at the following resources:
+## Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+See `.env.example` for all variables.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Required for local run:
 
-## Deploy on Vercel
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `DATABASE_URL`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Optional integrations:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `VALSEA_API_URL`, `VALSEA_API_KEY`
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`
+- `RESEND_API_KEY`, `EMAIL_FROM`
+
+## Deployment
+
+See `docs/deployment.md` for production deployment and pre-launch checklist.
+
+## Verification and QA
+
+See `docs/test-plan.md` for functional and regression test matrix.
