@@ -15,7 +15,7 @@ export async function MarketingFooter() {
       <div className="mx-auto grid w-full max-w-7xl gap-8 px-6 py-12 md:grid-cols-3">
         <div>
           <h3 className="text-lg font-semibold">{appConfig.name}</h3>
-          <p className="mt-3 max-w-sm text-sm text-slate-400">{appConfig.description}</p>
+          <p className="mt-3 max-w-sm text-sm text-slate-400">{t.footer.productDescription}</p>
         </div>
 
         <div className="text-sm text-slate-400">

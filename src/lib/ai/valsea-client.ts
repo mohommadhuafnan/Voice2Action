@@ -15,6 +15,46 @@ function languageNeedsTranslation(language: string): boolean {
   return normalized.includes("sinhala") || normalized === "si" || normalized.includes("tamil") || normalized === "ta";
 }
 
+/** Translate UI or other English copy into Tamil or Sinhala using ValSea `/v1/translate`. */
+export async function translateEnglishToValseaTarget(
+  input: string,
+  targetLanguage: "sinhala" | "tamil",
+): Promise<string> {
+  const apiUrl = process.env.VALSEA_API_URL;
+  const apiKey = process.env.VALSEA_API_KEY;
+  if (!apiUrl || !apiKey || !input.trim()) {
+    return input;
+  }
+  const base = apiUrl.replace(/\/$/, "");
+  try {
+    const response = await fetch(`${base}/v1/translate`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "valsea-translate",
+        text: input,
+        source_language: "english",
+        target_language: targetLanguage,
+      }),
+    });
+    if (!response.ok) {
+      return input;
+    }
+    const json = (await response.json()) as {
+      translated_text?: string;
+      text?: string;
+      translation?: string;
+    };
+    const translated = json.translated_text ?? json.text ?? json.translation;
+    return translated && translated.trim().length > 0 ? translated : input;
+  } catch {
+    return input;
+  }
+}
+
 async function translateToEnglishViaValsea(input: string, sourceLanguage: string): Promise<string> {
   const apiUrl = process.env.VALSEA_API_URL;
   const apiKey = process.env.VALSEA_API_KEY;

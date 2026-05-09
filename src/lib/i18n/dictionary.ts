@@ -24,6 +24,7 @@ type Dictionary = {
     company: string;
     support: string;
     builtForSupport: string;
+    productDescription: string;
   };
   pages: {
     features: {
@@ -90,6 +91,8 @@ const dictionaries: Record<AppLanguage, Dictionary> = {
       company: "Company",
       support: "Support",
       builtForSupport: "Built for modern support operations.",
+      productDescription:
+        "Multilingual AI-powered voice-to-workflow automation for support operations.",
     },
     pages: {
       features: {
@@ -162,6 +165,8 @@ const dictionaries: Record<AppLanguage, Dictionary> = {
       company: "සමාගම",
       support: "සහාය",
       builtForSupport: "නවීන සහාය මෙහෙයුම් සඳහා නිර්මාණය කර ඇත.",
+      productDescription:
+        "බහුභාෂා AI මඟින් හඬ ඇතුළත් කටයුතු ක්‍රියාවලිය ස්වයංක්‍රිය කිරීම සහාය මෙහෙයුම් සඳහා.",
     },
     pages: {
       features: {
@@ -234,6 +239,8 @@ const dictionaries: Record<AppLanguage, Dictionary> = {
       company: "நிறுவனம்",
       support: "ஆதரவு",
       builtForSupport: "நவீன ஆதரவு செயல்பாடுகளுக்காக உருவாக்கப்பட்டது.",
+      productDescription:
+        "ஆதரவுச் செயல்பாடுகளுக்குப் பலமொழிக் குரல் முதல் வேலைநெறித் தானியங்குவரை செயற்கை நுண்ணறிவு இணைப்பு.",
     },
     pages: {
       features: {
@@ -246,7 +253,7 @@ const dictionaries: Record<AppLanguage, Dictionary> = {
         paragraphs: [
           "Voice2Action என்பது ஒழுங்கற்ற குரல் புகார்களை கட்டமைக்கப்பட்ட ஆதரவு வேலைநெறிகளாக மாற்ற வடிவமைக்கப்பட்ட பலமொழி AI தளமாகும்.",
           "எங்கள் நோக்கம் ஆதரவு அணிகள் பதில் நேரத்தை குறைக்க, அவசர பிரச்சினைகளை துல்லியமாக முன்னுரிமைப்படுத்த, மற்றும் தரவின் அடிப்படையில் தெளிவுடன் செயல்பட உதவுவது.",
-          "இந்த தளம் speech-to-text, மொழி கண்டறிதல், உணர்வு பகுப்பாய்வு, அவசரத்தன்மை மதிப்பீடு, மற்றும் டிக்கெட் தானியக்கத்தை ஒரே தயாரிப்பு-தயார் அமைப்பாக இணைக்கிறது.",
+          "இந்த தளம் குரல்-உரை மாற்றம், மொழி கண்டறிதல், உணர்வுப் பகுப்பாய்வு, அவசர மதிப்பீடு மற்றும் டிக்கெட் தானியங்குவை ஒரே தயாரிப்பு தயாரான அமைப்பாக இணைக்கிறது.",
         ],
       },
       pricing: {

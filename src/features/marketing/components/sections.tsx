@@ -13,12 +13,12 @@ export function DemoSection() {
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl bg-slate-900/80 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Transcript</p>
-            <p className="mt-2 text-sm text-slate-200">My package still has not arrived, three days now, please check urgently.</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{content.demoTranscriptHeading}</p>
+            <p className="mt-2 text-sm text-slate-200">{content.heroSampleTranscript.replace(/^"|"$/g, "")}</p>
           </div>
           <div className="rounded-xl bg-slate-900/80 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Structured output</p>
-            <p className="mt-2 text-sm text-slate-200">intent: delivery_complaint | sentiment: frustrated | priority: high</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{content.demoStructuredHeading}</p>
+            <p className="mt-2 text-sm text-slate-200">{content.demoStructuredSample}</p>
           </div>
         </div>
       </div>
@@ -53,7 +53,9 @@ export function HowItWorksSection() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {content.howItWorks.map((step, idx) => (
           <div key={step.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-xs uppercase tracking-[0.2em] text-sky-300">Step {idx + 1}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-sky-300">
+              {content.howStepLabel} {idx + 1}
+            </p>
             <h3 className="mt-2 font-semibold text-white">{step.title}</h3>
             <p className="mt-2 text-sm text-slate-300">{step.detail}</p>
           </div>

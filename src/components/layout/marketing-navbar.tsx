@@ -22,7 +22,7 @@ export function MarketingNavbar() {
   const t = useDictionary();
 
   useEffect(() => {
-    setMounted(true);
+    queueMicrotask(() => setMounted(true));
   }, []);
   const marketingLabelByHref: Record<string, string> = {
     "/features": t.nav.features,

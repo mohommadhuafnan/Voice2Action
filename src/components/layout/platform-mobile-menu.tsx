@@ -23,7 +23,7 @@ export function PlatformMobileMenu({ items }: { items: Item[] }) {
   const panelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    setMounted(true);
+    queueMicrotask(() => setMounted(true));
   }, []);
 
   useEffect(() => {

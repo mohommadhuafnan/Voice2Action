@@ -57,17 +57,17 @@ export function HeroSection() {
           <div className="space-y-4">
             <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{content.incomingVoiceLabel}</p>
-              <p className="mt-2 text-sm text-slate-200">&quot;My package still has not arrived for three days, please check urgently.&quot;</p>
+              <p className="mt-2 text-sm text-slate-200">{content.heroSampleTranscript}</p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <Kpi icon={Mic} label="Language" value="English" />
-              <Kpi icon={BadgeCheck} label="Intent" value="Delivery complaint" />
-              <Kpi icon={Sparkles} label="Urgency" value="High (0.91)" />
+              <Kpi icon={Mic} label={content.heroKpiLangLabel} value={content.heroKpiLangValue} />
+              <Kpi icon={BadgeCheck} label={content.heroKpiIntentLabel} value={content.heroKpiIntentValue} />
+              <Kpi icon={Sparkles} label={content.heroKpiUrgencyLabel} value={content.heroKpiUrgencyValue} />
             </div>
 
             <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-              {content.recommendedActionPrefix} Escalate to logistics support and notify assigned agent.
+              {content.recommendedActionPrefix} {content.heroRecommendedContinuation}
             </div>
           </div>
         </motion.div>
