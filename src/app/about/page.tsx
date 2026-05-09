@@ -1,28 +1,30 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNavbar } from "@/components/layout/marketing-navbar";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { languageCookieName } from "@/lib/i18n/config";
+import { normalizeLanguage } from "@/lib/i18n/resolve-language";
 
 export const metadata: Metadata = {
   title: "About | Voice2Action",
   description: "Learn about Voice2Action mission and product vision.",
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const cookieStore = await cookies();
+  const language = normalizeLanguage(cookieStore.get(languageCookieName)?.value);
+  const t = getDictionary(language);
+
   return (
     <div className="min-h-screen">
       <MarketingNavbar />
       <main className="mx-auto w-full max-w-5xl px-6 py-20">
-        <h1 className="text-4xl font-semibold text-white">Built for modern customer support teams</h1>
+        <h1 className="text-4xl font-semibold text-white">{t.pages.about.title}</h1>
         <div className="mt-8 space-y-6 text-slate-300">
-          <p>
-            Voice2Action is a multilingual AI platform designed to transform unstructured voice complaints into structured support workflows.
-          </p>
-          <p>
-            Our mission is to help support teams reduce response time, prioritize urgent issues accurately, and operate with data-driven clarity.
-          </p>
-          <p>
-            The platform combines speech-to-text, language detection, sentiment analysis, urgency scoring, and ticket automation in a single production-ready system.
-          </p>
+          <p>{t.pages.about.paragraphs[0]}</p>
+          <p>{t.pages.about.paragraphs[1]}</p>
+          <p>{t.pages.about.paragraphs[2]}</p>
         </div>
       </main>
       <MarketingFooter />

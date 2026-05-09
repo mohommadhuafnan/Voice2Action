@@ -1,6 +1,7 @@
 import { Prisma, SystemRole, TicketStatus } from "@prisma/client";
 import { db } from "@/server/db/client";
 import type { DbUserWithRole } from "@/server/services/ticket-automation";
+import { sendTicketUpdatedEmail } from "@/server/services/email-notifier";
 
 const ALLOWED_STATUS_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
   OPEN: ["IN_PROGRESS", "ESCALATED", "CLOSED"],
@@ -102,6 +103,16 @@ export async function updateTicketStatusWorkflow(params: {
         : []),
     ],
   });
+
+  try {
+    await sendTicketUpdatedEmail({
+      userId: ticket.reporterId,
+      ticketNo: ticket.ticketNo,
+      status: params.nextStatus,
+    });
+  } catch {
+    // Keep ticket workflow resilient if email provider fails.
+  }
 
   return updated;
 }

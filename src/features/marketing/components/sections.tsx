@@ -1,9 +1,15 @@
+"use client";
+
 import Link from "next/link";
-import { coreFeatures, faqs, howItWorks, pricingPlans, testimonials } from "@/features/marketing/components/content";
+import { useLanguage } from "@/components/i18n/language-provider";
+import { getMarketingContent } from "@/features/marketing/components/content";
 
 export function DemoSection() {
+  const { language } = useLanguage();
+  const content = getMarketingContent(language);
+
   return (
-    <Section title="Live Workflow Demo" description="Voice in, structured action out.">
+    <Section title={content.demoTitle} description={content.demoDescription}>
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl bg-slate-900/80 p-4">
@@ -21,10 +27,13 @@ export function DemoSection() {
 }
 
 export function FeaturesSection() {
+  const { language } = useLanguage();
+  const content = getMarketingContent(language);
+
   return (
-    <Section title="Core Features" description="Built for customer support teams at scale.">
+    <Section title={content.featuresTitle} description={content.featuresDescription}>
       <div className="grid gap-4 md:grid-cols-2">
-        {coreFeatures.map((feature) => (
+        {content.coreFeatures.map((feature) => (
           <div key={feature.title} className="rounded-2xl border border-white/10 bg-white/5 p-6">
             <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
             <p className="mt-2 text-sm text-slate-300">{feature.description}</p>
@@ -36,10 +45,13 @@ export function FeaturesSection() {
 }
 
 export function HowItWorksSection() {
+  const { language } = useLanguage();
+  const content = getMarketingContent(language);
+
   return (
-    <Section title="How It Works" description="Four-step flow from voice to action.">
+    <Section title={content.howTitle} description={content.howDescription}>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {howItWorks.map((step, idx) => (
+        {content.howItWorks.map((step, idx) => (
           <div key={step.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <p className="text-xs uppercase tracking-[0.2em] text-sky-300">Step {idx + 1}</p>
             <h3 className="mt-2 font-semibold text-white">{step.title}</h3>
@@ -52,10 +64,13 @@ export function HowItWorksSection() {
 }
 
 export function TestimonialsSection() {
+  const { language } = useLanguage();
+  const content = getMarketingContent(language);
+
   return (
-    <Section title="Trusted by Support Teams" description="Real impact from teams handling high complaint volume.">
+    <Section title={content.trustedTitle} description={content.trustedDescription}>
       <div className="grid gap-4 md:grid-cols-3">
-        {testimonials.map((item) => (
+        {content.testimonials.map((item) => (
           <blockquote key={item.company} className="rounded-2xl border border-white/10 bg-white/5 p-6">
             <p className="text-sm text-slate-200">&quot;{item.quote}&quot;</p>
             <footer className="mt-4 text-xs text-slate-400">{item.name} - {item.company}</footer>
@@ -67,10 +82,13 @@ export function TestimonialsSection() {
 }
 
 export function PricingPreviewSection() {
+  const { language } = useLanguage();
+  const content = getMarketingContent(language);
+
   return (
-    <Section title="Simple Pricing" description="Plans that grow with your support operation.">
+    <Section title={content.pricingTitle} description={content.pricingDescription}>
       <div className="grid gap-4 md:grid-cols-3">
-        {pricingPlans.map((plan) => (
+        {content.pricingPlans.map((plan) => (
           <div
             key={plan.name}
             className={[
@@ -94,10 +112,13 @@ export function PricingPreviewSection() {
 }
 
 export function FaqSection() {
+  const { language } = useLanguage();
+  const content = getMarketingContent(language);
+
   return (
-    <Section title="Frequently Asked Questions" description="Everything you need before launching.">
+    <Section title={content.faqTitle} description={content.faqDescription}>
       <div className="space-y-3">
-        {faqs.map((faq) => (
+        {content.faqs.map((faq) => (
           <div key={faq.q} className="rounded-xl border border-white/10 bg-white/5 p-5">
             <h4 className="font-medium text-white">{faq.q}</h4>
             <p className="mt-2 text-sm text-slate-300">{faq.a}</p>
@@ -109,16 +130,19 @@ export function FaqSection() {
 }
 
 export function CtaSection() {
+  const { language } = useLanguage();
+  const content = getMarketingContent(language);
+
   return (
     <section className="px-6 py-16">
       <div className="mx-auto flex w-full max-w-7xl flex-col items-center rounded-3xl border border-sky-400/30 bg-sky-500/10 px-6 py-12 text-center">
-        <h2 className="max-w-2xl text-3xl font-semibold text-white">Ready to turn voice complaints into measurable support outcomes?</h2>
-        <p className="mt-3 max-w-2xl text-slate-200">Deploy Voice2Action and empower your teams with multilingual AI workflow automation.</p>
+        <h2 className="max-w-2xl text-3xl font-semibold text-white">{content.ctaTitle}</h2>
+        <p className="mt-3 max-w-2xl text-slate-200">{content.ctaDescription}</p>
         <Link
           href="/dashboard"
           className="mt-6 rounded-xl bg-sky-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-sky-400"
         >
-          Start Building
+          {content.ctaButton}
         </Link>
       </div>
     </section>

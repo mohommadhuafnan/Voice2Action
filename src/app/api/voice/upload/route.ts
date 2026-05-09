@@ -29,11 +29,16 @@ export async function POST(request: Request) {
 
     validateAudioFile(file);
 
+    const source = formData.get("source");
+    const durationSec = formData.get("durationSec");
+    const waveform = formData.get("waveform");
+    const transcriptHintValue = formData.get("transcriptHint");
+
     const parsed = audioUploadSchema.safeParse({
-      source: formData.get("source"),
-      durationSec: formData.get("durationSec"),
-      waveform: formData.get("waveform"),
-      transcriptHint: formData.get("transcriptHint"),
+      source,
+      durationSec: durationSec ?? undefined,
+      waveform: waveform ?? undefined,
+      transcriptHint: transcriptHintValue ?? undefined,
     });
 
     if (!parsed.success) {

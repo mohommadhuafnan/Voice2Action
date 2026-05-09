@@ -1,6 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { SystemRole, type Prisma, type User } from "@prisma/client";
 import { db } from "@/server/db/client";
+import { sendTicketCreatedEmail } from "@/server/services/email-notifier";
 
 export type DbUserWithRole = User & {
   role: SystemRole;
@@ -292,6 +293,15 @@ export async function createAutomatedTicket(input: AutomatedTicketInput) {
       } as Prisma.InputJsonValue,
     },
   });
+
+  try {
+    await sendTicketCreatedEmail({
+      userId: input.reporterId,
+      ticketNo: ticket.ticketNo,
+    });
+  } catch {
+    // Do not block workflow if email provider fails.
+  }
 
   return ticket;
 }

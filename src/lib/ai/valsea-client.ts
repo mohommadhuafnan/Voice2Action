@@ -10,6 +10,53 @@ function mapLanguageToValsea(language: string): string {
   return "english";
 }
 
+function languageNeedsTranslation(language: string): boolean {
+  const normalized = language.trim().toLowerCase();
+  return normalized.includes("sinhala") || normalized === "si" || normalized.includes("tamil") || normalized === "ta";
+}
+
+async function translateToEnglishViaValsea(input: string, sourceLanguage: string): Promise<string> {
+  const apiUrl = process.env.VALSEA_API_URL;
+  const apiKey = process.env.VALSEA_API_KEY;
+
+  if (!apiUrl || !apiKey || !languageNeedsTranslation(sourceLanguage)) {
+    return input;
+  }
+
+  const base = apiUrl.replace(/\/$/, "");
+
+  try {
+    const response = await fetch(`${base}/v1/translate`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "valsea-translate",
+        text: input,
+        source_language: mapLanguageToValsea(sourceLanguage),
+        target_language: "english",
+      }),
+    });
+
+    if (!response.ok) {
+      return input;
+    }
+
+    const json = (await response.json()) as {
+      translated_text?: string;
+      text?: string;
+      translation?: string;
+    };
+
+    const translated = json.translated_text ?? json.text ?? json.translation;
+    return translated && translated.trim().length > 0 ? translated : input;
+  } catch {
+    return input;
+  }
+}
+
 export async function transcribeAudioViaValsea(
   audioUrl: string,
   languageHint: "auto" | "english" | "sinhala" | "tamil" = "auto",
@@ -143,7 +190,19 @@ export async function analyzeTextViaValsea(input: AnalyzeTextInput): Promise<AIS
   }
 
   const base = apiUrl.replace(/\/$/, "");
-  const fallback = runHeuristicNlp(input.transcript, input.detectedLanguage);
+  const translatedTranscript = await translateToEnglishViaValsea(input.transcript, input.detectedLanguage);
+  const analysisText = translatedTranscript || input.transcript;
+  const fallbackBase = runHeuristicNlp(analysisText, input.detectedLanguage);
+  const fallback = aiStructuredOutputSchema.parse({
+    ...fallbackBase,
+    transcript: input.transcript,
+    translated_transcript: translatedTranscript !== input.transcript ? translatedTranscript : undefined,
+    entities: {
+      ...fallbackBase.entities,
+      source_language: input.detectedLanguage,
+    },
+    summary: `Complaint intent: ${fallbackBase.intent}. Priority: ${fallbackBase.priority}.`,
+  });
 
   // Try legacy structured endpoint if available for this account/version.
   const legacyResponse = await fetch(`${base}/analyze-text`, {
@@ -153,7 +212,7 @@ export async function analyzeTextViaValsea(input: AnalyzeTextInput): Promise<AIS
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      text: input.transcript,
+      text: analysisText,
       language_hint: input.detectedLanguage,
       tasks: ["intent", "sentiment", "urgency", "entities", "recommended_action"],
       output_format: "voice2action_v1",
@@ -162,7 +221,18 @@ export async function analyzeTextViaValsea(input: AnalyzeTextInput): Promise<AIS
 
   if (legacyResponse.ok) {
     const json = await legacyResponse.json();
-    const parsed = aiStructuredOutputSchema.safeParse(json);
+    const parsed = aiStructuredOutputSchema.safeParse({
+      ...json,
+      transcript: input.transcript,
+      translated_transcript: translatedTranscript !== input.transcript ? translatedTranscript : undefined,
+      entities: {
+        ...((json as { entities?: Record<string, string> }).entities ?? {}),
+        source_language: input.detectedLanguage,
+      },
+      summary:
+        (json as { summary?: string }).summary ??
+        `Complaint intent: ${(json as { intent?: string }).intent ?? "general_complaint"}. Priority: ${(json as { priority?: string }).priority ?? "MEDIUM"}.`,
+    });
     if (parsed.success) {
       return parsed.data;
     }
@@ -177,7 +247,7 @@ export async function analyzeTextViaValsea(input: AnalyzeTextInput): Promise<AIS
     },
     body: JSON.stringify({
       model: "valsea-sentiment",
-      transcript: input.transcript,
+      transcript: analysisText,
       language: mapLanguageToValsea(input.detectedLanguage),
       response_format: "json",
     }),
@@ -203,5 +273,6 @@ export async function analyzeTextViaValsea(input: AnalyzeTextInput): Promise<AIS
   return aiStructuredOutputSchema.parse({
     ...fallback,
     sentiment: providerSentiment.toLowerCase(),
+    summary: fallback.summary ?? `Complaint intent: ${fallback.intent}. Priority: ${fallback.priority}.`,
   });
 }

@@ -24,6 +24,10 @@ type SpeechRecognitionEventLike = {
   }>;
 };
 
+type StartRecordingOptions = {
+  language?: string;
+};
+
 export function useVoiceRecorder() {
   const [state, setState] = useState<RecorderState>("idle");
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -31,12 +35,15 @@ export function useVoiceRecorder() {
   const [error, setError] = useState<string | null>(null);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [finalTranscript, setFinalTranscript] = useState("");
+  const [speechSupported, setSpeechSupported] = useState(true);
+  const [speechStatus, setSpeechStatus] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const speechRef = useRef<SpeechRecognitionLike | null>(null);
+  const speechStartedRef = useRef(false);
 
   const audioUrl = useMemo(() => {
     if (!audioBlob) {
@@ -58,13 +65,15 @@ export function useVoiceRecorder() {
     };
   }, [audioUrl]);
 
-  const startRecording = useCallback(async () => {
+  const startRecording = useCallback(async (options?: StartRecordingOptions) => {
     try {
       setError(null);
       setAudioBlob(null);
       setElapsedSec(0);
       setLiveTranscript("");
       setFinalTranscript("");
+      setSpeechStatus(null);
+      speechStartedRef.current = false;
       chunksRef.current = [];
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -102,11 +111,17 @@ export function useVoiceRecorder() {
         ?? (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
 
       if (SpeechCtor) {
+        setSpeechSupported(true);
         const speech = new SpeechCtor();
         speech.continuous = true;
         speech.interimResults = true;
-        speech.lang = "en-US";
+        const preferredLanguage =
+          options?.language && options.language !== "auto"
+            ? options.language
+            : navigator.languages?.[0] ?? navigator.language ?? "en-US";
+        speech.lang = preferredLanguage;
         speech.onresult = (event) => {
+          speechStartedRef.current = true;
           let interim = "";
           let finalized = "";
           for (let i = event.resultIndex; i < event.results.length; i += 1) {
@@ -122,8 +137,23 @@ export function useVoiceRecorder() {
           }
           setLiveTranscript(interim);
         };
-        speech.onerror = () => {
-          // Keep recording alive even if browser STT fails.
+        speech.onerror = (event) => {
+          const reason = event.error ?? "unknown";
+          if (reason === "no-speech" || reason === "aborted") {
+            // Keep trying while user is recording; this is common on some browsers.
+            return;
+          }
+          if (reason === "language-not-supported") {
+            setSpeechStatus("Selected language is not supported by this browser. Falling back to English.");
+            speech.lang = "en-US";
+            try {
+              speech.start();
+            } catch {
+              // Ignore restart errors.
+            }
+            return;
+          }
+          setSpeechStatus(`Live speech typing is unavailable (${reason}). Recording still works.`);
         };
         speech.onend = () => {
           if (recorderRef.current?.state === "recording") {
@@ -138,8 +168,17 @@ export function useVoiceRecorder() {
         try {
           speech.start();
         } catch {
+          setSpeechStatus("Live speech typing could not start in this browser.");
           // Ignore startup errors; recorder still works.
         }
+        setTimeout(() => {
+          if (recorderRef.current?.state === "recording" && !speechStartedRef.current) {
+            setSpeechStatus("Live typing did not detect speech yet. Speak louder or switch browser to Chrome/Edge.");
+          }
+        }, 4000);
+      } else {
+        setSpeechSupported(false);
+        setSpeechStatus("Live speech typing is not supported in this browser. Recording still works.");
       }
     } catch {
       setError("Microphone access denied or unavailable.");
@@ -160,6 +199,8 @@ export function useVoiceRecorder() {
     error,
     liveTranscript,
     finalTranscript,
+    speechSupported,
+    speechStatus,
     startRecording,
     stopRecording,
   };

@@ -1,22 +1,28 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNavbar } from "@/components/layout/marketing-navbar";
 import { pricingPlans } from "@/features/marketing/components/content";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { languageCookieName } from "@/lib/i18n/config";
+import { normalizeLanguage } from "@/lib/i18n/resolve-language";
 
 export const metadata: Metadata = {
   title: "Pricing | Voice2Action",
   description: "Transparent Voice2Action pricing for all support team sizes.",
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const cookieStore = await cookies();
+  const language = normalizeLanguage(cookieStore.get(languageCookieName)?.value);
+  const t = getDictionary(language);
+
   return (
     <div className="min-h-screen">
       <MarketingNavbar />
       <main className="mx-auto w-full max-w-7xl px-6 py-20">
-        <h1 className="text-4xl font-semibold text-white">Pricing plans for every growth stage</h1>
-        <p className="mt-3 max-w-3xl text-slate-300">
-          Start quickly and scale with multilingual voice intelligence, automated workflows, and advanced support analytics.
-        </p>
+        <h1 className="text-4xl font-semibold text-white">{t.pages.pricing.title}</h1>
+        <p className="mt-3 max-w-3xl text-slate-300">{t.pages.pricing.subtitle}</p>
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {pricingPlans.map((plan) => (
             <article

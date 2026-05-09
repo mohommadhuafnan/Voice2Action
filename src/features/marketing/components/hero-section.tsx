@@ -3,9 +3,13 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { BadgeCheck, Mic, Sparkles } from "lucide-react";
-import { stats } from "@/features/marketing/components/content";
+import { useLanguage } from "@/components/i18n/language-provider";
+import { getMarketingContent } from "@/features/marketing/components/content";
 
 export function HeroSection() {
+  const { language } = useLanguage();
+  const content = getMarketingContent(language);
+
   return (
     <section className="relative overflow-hidden px-6 py-20 md:py-28">
       <div className="mx-auto grid w-full max-w-7xl gap-12 lg:grid-cols-[1.2fr,0.8fr] lg:items-center">
@@ -17,15 +21,15 @@ export function HeroSection() {
         >
           <span className="inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-500/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-sky-200">
             <Sparkles className="h-4 w-4" />
-            Voice AI for Support Ops
+            {content.heroBadge}
           </span>
 
           <h1 className="max-w-3xl text-4xl font-semibold leading-tight text-white md:text-6xl">
-            Convert multilingual voice complaints into structured business actions.
+            {content.heroTitle}
           </h1>
 
           <p className="max-w-2xl text-lg text-slate-300 md:text-xl">
-            Voice2Action transforms English, Sinhala, Tamil, and mixed-language voice messages into intent-aware tickets, urgency-based escalation, and operational analytics.
+            {content.heroSubtitle}
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -33,13 +37,13 @@ export function HeroSection() {
               href="/dashboard"
               className="rounded-xl bg-sky-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-sky-400"
             >
-              Start Free Trial
+              {content.heroPrimaryCta}
             </Link>
             <Link
               href="/features"
               className="rounded-xl border border-white/15 px-6 py-3 text-sm font-medium text-slate-100 transition hover:border-sky-400/70"
             >
-              Explore Features
+              {content.heroSecondaryCta}
             </Link>
           </div>
         </motion.div>
@@ -52,7 +56,7 @@ export function HeroSection() {
         >
           <div className="space-y-4">
             <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Incoming voice</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{content.incomingVoiceLabel}</p>
               <p className="mt-2 text-sm text-slate-200">&quot;My package still has not arrived for three days, please check urgently.&quot;</p>
             </div>
 
@@ -63,14 +67,14 @@ export function HeroSection() {
             </div>
 
             <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-              Recommended action: Escalate to logistics support and notify assigned agent.
+              {content.recommendedActionPrefix} Escalate to logistics support and notify assigned agent.
             </div>
           </div>
         </motion.div>
       </div>
 
       <div className="mx-auto mt-14 grid w-full max-w-7xl gap-4 sm:grid-cols-3">
-        {stats.map((item) => (
+        {content.stats.map((item) => (
           <div key={item.label} className="rounded-xl border border-white/10 bg-white/5 px-5 py-4">
             <p className="text-2xl font-semibold text-white">{item.value}</p>
             <p className="mt-1 text-sm text-slate-400">{item.label}</p>

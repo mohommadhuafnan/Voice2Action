@@ -98,6 +98,7 @@ export async function processAudioUpload(
   ) {
     return {
       transcript: existingAnalysis.transcript,
+      translatedTranscript: undefined,
       language: existingAnalysis.language,
       intent: existingAnalysis.intent,
       sentiment: existingAnalysis.sentiment,
@@ -105,6 +106,7 @@ export async function processAudioUpload(
       priority: existingAnalysis.priority,
       entities: existingAnalysis.entities as Record<string, string>,
       recommendedAction: existingAnalysis.recommendedAction,
+      summary: undefined,
       ticketId: upload.ticketId,
       audioUploadId: upload.id,
     };
@@ -193,6 +195,7 @@ export async function processAudioUpload(
 
     return {
       transcript: analysis.transcript,
+      translatedTranscript: analysis.translated_transcript,
       language: analysis.language,
       intent: analysis.intent,
       sentiment: analysis.sentiment,
@@ -200,6 +203,7 @@ export async function processAudioUpload(
       priority: analysis.priority,
       entities: analysis.entities,
       recommendedAction: analysis.recommended_action,
+      summary: analysis.summary,
       ticketId: automatedTicket.id,
       audioUploadId: upload.id,
     };

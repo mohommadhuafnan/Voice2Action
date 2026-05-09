@@ -1,6 +1,7 @@
 import { readFile } from "fs/promises";
 import { extname, join } from "path";
 import { NextResponse } from "next/server";
+import { getBinaryFile } from "@/server/db/mongo-binary";
 
 const MIME_BY_EXT: Record<string, string> = {
   ".webm": "audio/webm",
@@ -20,6 +21,19 @@ export async function GET(request: Request) {
   }
 
   const decodedKey = decodeURIComponent(key);
+  const binaryFile = await getBinaryFile(decodedKey);
+
+  if (binaryFile) {
+    const body = new Uint8Array(binaryFile.buffer);
+    return new NextResponse(body, {
+      status: 200,
+      headers: {
+        "Content-Type": binaryFile.contentType,
+        "Cache-Control": "private, max-age=3600",
+      },
+    });
+  }
+
   const filePath = join(process.cwd(), ".uploads", decodedKey);
 
   try {

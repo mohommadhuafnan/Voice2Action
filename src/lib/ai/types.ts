@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const aiStructuredOutputSchema = z.object({
   transcript: z.string().min(1),
+  translated_transcript: z.string().min(1).optional(),
   language: z.string().min(1),
   intent: z.string().min(1),
   sentiment: z.string().min(1),
@@ -9,6 +10,7 @@ export const aiStructuredOutputSchema = z.object({
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
   entities: z.record(z.string(), z.string()),
   recommended_action: z.string().min(1),
+  summary: z.string().min(1).optional(),
   confidence: z.number().min(0).max(1).optional(),
   model_version: z.string().optional(),
 });

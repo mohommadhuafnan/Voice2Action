@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Mic, Square, UploadCloud } from "lucide-react";
+import { Camera, Mic, Square, UploadCloud } from "lucide-react";
+import { useDictionary } from "@/components/i18n/language-provider";
 import { extractWaveformPeaks } from "@/lib/audio/waveform";
 import { AudioWaveform } from "@/features/audio/components/audio-waveform";
 import { useVoiceRecorder } from "@/features/audio/hooks/use-voice-recorder";
@@ -17,6 +18,13 @@ type UploadItem = {
   publicUrl?: string | null;
   ticketId?: string | null;
   analysisStatus?: string;
+};
+
+type MediaEvidenceItem = {
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  publicUrl: string;
 };
 
 type PipelineResult = {
@@ -34,8 +42,23 @@ type PipelineResult = {
 
 type LanguageOption = "auto" | "english" | "sinhala" | "tamil";
 
+function toSpeechRecognitionLanguage(language: LanguageOption) {
+  switch (language) {
+    case "english":
+      return "en-US";
+    case "sinhala":
+      return "si-LK";
+    case "tamil":
+      return "ta-IN";
+    case "auto":
+    default:
+      return "auto";
+  }
+}
+
 export function VoiceUploadStudio() {
   const recorder = useVoiceRecorder();
+  const t = useDictionary();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [peaks, setPeaks] = useState<number[]>([]);
@@ -44,6 +67,8 @@ export function VoiceUploadStudio() {
   const [recentUploads, setRecentUploads] = useState<UploadItem[]>([]);
   const [latestResult, setLatestResult] = useState<PipelineResult | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>("auto");
+  const [mediaItems, setMediaItems] = useState<MediaEvidenceItem[]>([]);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const transcriptBoxRef = useRef<HTMLDivElement | null>(null);
 
   const activeAudioBlob = useMemo(() => recorder.audioBlob, [recorder.audioBlob]);
@@ -88,6 +113,36 @@ export function VoiceUploadStudio() {
     }
     const json = (await response.json()) as { uploads: UploadItem[] };
     setRecentUploads(json.uploads);
+  }
+
+  async function uploadMediaEvidence(file: File | null) {
+    if (!file) {
+      return;
+    }
+
+    setIsUploadingMedia(true);
+    try {
+      const formData = new FormData();
+      formData.append("media", file);
+      const response = await fetch("/api/voice/media-upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const err = (await response.json()) as { error?: string };
+        throw new Error(err.error ?? "Media upload failed.");
+      }
+
+      const json = (await response.json()) as { media: MediaEvidenceItem };
+      setMediaItems((prev) => [json.media, ...prev].slice(0, 6));
+      toast.success("Media evidence uploaded.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Media upload failed.";
+      toast.error(message);
+    } finally {
+      setIsUploadingMedia(false);
+    }
   }
 
   async function submitAudio(source: "BROWSER_RECORDING" | "FILE_UPLOAD") {
@@ -216,7 +271,7 @@ export function VoiceUploadStudio() {
     <div className="space-y-8">
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-xl font-semibold text-white">Record in browser</h2>
+          <h2 className="text-xl font-semibold text-white">{t.voice.recordingPanelTitle}</h2>
           <p className="mt-2 text-sm text-slate-300">
             Capture customer complaint audio directly using microphone access.
           </p>
@@ -240,7 +295,11 @@ export function VoiceUploadStudio() {
           <div className="mt-5 flex items-center gap-3">
             <button
               type="button"
-              onClick={recorder.startRecording}
+              onClick={() => {
+                void recorder.startRecording({
+                  language: toSpeechRecognitionLanguage(selectedLanguage),
+                });
+              }}
               disabled={recorder.state === "recording"}
               className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
@@ -260,14 +319,18 @@ export function VoiceUploadStudio() {
           </div>
 
           {recorder.error ? <p className="mt-3 text-sm text-rose-300">{recorder.error}</p> : null}
+          {recorder.speechStatus ? (
+            <p className="mt-3 text-sm text-amber-300">{recorder.speechStatus}</p>
+          ) : null}
 
           {recorder.audioUrl ? (
             <audio className="mt-4 w-full" controls src={recorder.audioUrl} />
           ) : null}
 
-          {recorder.state === "recording" || recorder.finalTranscript || recorder.liveTranscript ? (
+          {recorder.speechSupported &&
+          (recorder.state === "recording" || recorder.finalTranscript || recorder.liveTranscript) ? (
             <div className="mt-4 rounded-xl border border-white/10 bg-slate-900/60 p-3">
-              <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Live speech text</p>
+              <p className="text-xs uppercase tracking-[0.15em] text-slate-400">{t.voice.liveSpeechText}</p>
               <p
                 ref={transcriptBoxRef}
                 className="mt-2 max-h-28 overflow-y-auto whitespace-pre-wrap text-sm text-slate-200"
@@ -297,7 +360,7 @@ export function VoiceUploadStudio() {
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-xl font-semibold text-white">Upload audio file</h2>
+          <h2 className="text-xl font-semibold text-white">{t.voice.filePanelTitle}</h2>
           <p className="mt-2 text-sm text-slate-300">Upload MP3, WAV, OGG, M4A, or WEBM files.</p>
 
           <label className="mt-5 block rounded-xl border border-dashed border-white/20 bg-slate-900/70 p-4 text-sm text-slate-300">
@@ -329,6 +392,57 @@ export function VoiceUploadStudio() {
       <section className="space-y-3">
         <h3 className="text-lg font-semibold text-white">Waveform preview</h3>
         <AudioWaveform peaks={peaks} />
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <h3 className="text-lg font-semibold text-white">{t.voice.mediaEvidenceTitle}</h3>
+        <p className="mt-2 text-sm text-slate-300">{t.voice.mediaEvidenceSubtitle}</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm text-slate-100">
+            <Camera className="h-4 w-4" />
+            {t.voice.takePhoto}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(event) => {
+                void uploadMediaEvidence(event.target.files?.[0] ?? null);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm text-slate-100">
+            <UploadCloud className="h-4 w-4" />
+            {t.voice.uploadFromDevice}
+            <input
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={(event) => {
+                void uploadMediaEvidence(event.target.files?.[0] ?? null);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+          {isUploadingMedia ? <span className="text-sm text-slate-400">{t.voice.uploadingMedia}</span> : null}
+        </div>
+
+        {mediaItems.length > 0 ? (
+          <div className="mt-4 space-y-2">
+            {mediaItems.map((item) => (
+              <a
+                key={item.publicUrl}
+                href={item.publicUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-slate-200"
+              >
+                {item.fileName} ({Math.ceil(item.sizeBytes / 1024)} KB)
+              </a>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
