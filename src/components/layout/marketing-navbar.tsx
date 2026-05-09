@@ -3,6 +3,7 @@
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useDictionary } from "@/components/i18n/language-provider";
 import { appConfig } from "@/config/app";
@@ -10,9 +11,14 @@ import { marketingNavLinks } from "@/features/marketing/components/content";
 
 export function MarketingNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuPanelRef = useRef<HTMLElement>(null);
   const t = useDictionary();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const marketingLabelByHref: Record<string, string> = {
     "/features": t.nav.features,
     "/about": t.nav.about,
@@ -45,7 +51,7 @@ export function MarketingNavbar() {
       return;
     }
 
-    const closeIfOutside = (event: PointerEvent) => {
+    const closeIfOutside = (event: Event) => {
       const target = event.target as Node;
       if (menuButtonRef.current?.contains(target)) {
         return;
@@ -57,7 +63,11 @@ export function MarketingNavbar() {
     };
 
     document.addEventListener("pointerdown", closeIfOutside, true);
-    return () => document.removeEventListener("pointerdown", closeIfOutside, true);
+    document.addEventListener("touchstart", closeIfOutside, true);
+    return () => {
+      document.removeEventListener("pointerdown", closeIfOutside, true);
+      document.removeEventListener("touchstart", closeIfOutside, true);
+    };
   }, [mobileOpen]);
 
   return (
@@ -112,47 +122,55 @@ export function MarketingNavbar() {
           </Link>
         </div>
       </div>
-      {mobileOpen ? (
-        <div className="md:hidden">
-          <div
-            className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm"
-            onPointerDown={() => setMobileOpen(false)}
-            aria-hidden="true"
-          />
-          <aside
-            ref={menuPanelRef}
-            className="fixed left-0 top-0 z-[130] h-screen w-[78vw] max-w-sm border-r border-white/10 bg-slate-950 p-5 pt-20 shadow-2xl"
-            onPointerDown={(event) => event.stopPropagation()}
-          >
-            <nav className="space-y-3 text-sm text-slate-100">
-              {marketingNavLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="block rounded-md px-2 py-2 hover:bg-white/5"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {marketingLabelByHref[link.href] ?? link.label}
-                </Link>
-              ))}
-              <Link
-                href="/sign-in"
-                className="block rounded-md border border-white/20 px-2 py-2"
+      {mobileOpen && mounted
+        ? createPortal(
+            <>
+              <div
+                className="fixed inset-0 z-[140] cursor-pointer touch-manipulation bg-black/80 backdrop-blur-sm"
+                aria-hidden="true"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  setMobileOpen(false);
+                }}
                 onClick={() => setMobileOpen(false)}
+              />
+              <aside
+                ref={menuPanelRef}
+                className="fixed left-0 top-0 z-[150] flex h-screen w-[78vw] max-w-sm touch-manipulation flex-col border-r border-white/10 bg-slate-950 p-5 pt-20 shadow-2xl"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
               >
-                {t.actions.login}
-              </Link>
-              <Link
-                href="/dashboard"
-                className="block rounded-md bg-sky-500 px-2 py-2 text-white"
-                onClick={() => setMobileOpen(false)}
-              >
-                {t.actions.getStarted}
-              </Link>
-            </nav>
-          </aside>
-        </div>
-      ) : null}
+                <nav className="space-y-3 text-sm text-slate-100">
+                  {marketingNavLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="block rounded-md px-2 py-2 hover:bg-white/5"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {marketingLabelByHref[link.href] ?? link.label}
+                    </Link>
+                  ))}
+                  <Link
+                    href="/sign-in"
+                    className="block rounded-md border border-white/20 px-2 py-2"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {t.actions.login}
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="block rounded-md bg-sky-500 px-2 py-2 text-white"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {t.actions.getStarted}
+                  </Link>
+                </nav>
+              </aside>
+            </>,
+            document.body,
+          )
+        : null}
     </header>
   );
 }
