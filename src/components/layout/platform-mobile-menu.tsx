@@ -12,10 +12,15 @@ type Item = {
 
 const HEADER_SELECTOR = "[data-platform-shell-header]";
 
+const Z_MENU_SCRIM = 2_147_483_000;
+const Z_MENU_DRAWER = 2_147_483_001;
+const Z_MENU_TOPBAR = 2_147_483_002;
+
 export function PlatformMobileMenu({ items }: { items: Item[] }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -49,7 +54,7 @@ export function PlatformMobileMenu({ items }: { items: Item[] }) {
 
     if (open) {
       header.classList.add("relative");
-      header.style.zIndex = "10070";
+      header.style.zIndex = String(Z_MENU_TOPBAR);
     } else {
       header.classList.remove("relative");
       header.style.zIndex = "";
@@ -61,7 +66,31 @@ export function PlatformMobileMenu({ items }: { items: Item[] }) {
     };
   }, [open]);
 
-  const closeMenu = () => setOpen(false);
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const closeIfOutside = (event: Event) => {
+      const path = event.composedPath();
+      if (panelRef.current && path.includes(panelRef.current)) {
+        return;
+      }
+      if (buttonRef.current && path.includes(buttonRef.current)) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeIfOutside, true);
+    document.addEventListener("touchstart", closeIfOutside, true);
+    return () => {
+      document.removeEventListener("pointerdown", closeIfOutside, true);
+      document.removeEventListener("touchstart", closeIfOutside, true);
+    };
+  }, [open]);
 
   return (
     <div className="md:hidden">
@@ -79,17 +108,16 @@ export function PlatformMobileMenu({ items }: { items: Item[] }) {
       {open && mounted
         ? createPortal(
             <>
-              <button
-                type="button"
-                aria-label="Close menu"
-                className="fixed inset-0 z-[10050] m-0 cursor-pointer touch-manipulation border-0 bg-black/80 p-0 backdrop-blur-sm"
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  closeMenu();
-                }}
+              <div
+                className="pointer-events-none fixed inset-0 bg-black/75 backdrop-blur-sm"
+                style={{ zIndex: Z_MENU_SCRIM }}
+                aria-hidden
               />
-              <aside className="fixed left-0 top-0 z-[10060] flex h-screen w-[78vw] max-w-sm touch-manipulation flex-col border-r border-white/10 bg-slate-950 p-5 pt-20 shadow-2xl">
+              <aside
+                ref={panelRef}
+                className="fixed left-0 top-0 flex h-screen w-[78vw] max-w-sm touch-manipulation flex-col border-r border-white/10 bg-slate-950 p-5 pt-20 shadow-2xl"
+                style={{ zIndex: Z_MENU_DRAWER }}
+              >
                 <nav className="space-y-2 text-sm text-slate-100">
                   {items.map((item) => (
                     <Link
