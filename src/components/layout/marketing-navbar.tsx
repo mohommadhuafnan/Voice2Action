@@ -2,7 +2,7 @@
 
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useDictionary } from "@/components/i18n/language-provider";
@@ -12,8 +12,6 @@ import { marketingNavLinks } from "@/features/marketing/components/content";
 export function MarketingNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const menuPanelRef = useRef<HTMLElement>(null);
   const t = useDictionary();
 
   useEffect(() => {
@@ -46,40 +44,17 @@ export function MarketingNavbar() {
     };
   }, [mobileOpen]);
 
-  useEffect(() => {
-    if (!mobileOpen) {
-      return;
-    }
-
-    const closeIfOutside = (event: Event) => {
-      const target = event.target as Node;
-      if (menuButtonRef.current?.contains(target)) {
-        return;
-      }
-      if (menuPanelRef.current?.contains(target)) {
-        return;
-      }
-      setMobileOpen(false);
-    };
-
-    document.addEventListener("pointerdown", closeIfOutside, true);
-    document.addEventListener("touchstart", closeIfOutside, true);
-    return () => {
-      document.removeEventListener("pointerdown", closeIfOutside, true);
-      document.removeEventListener("touchstart", closeIfOutside, true);
-    };
-  }, [mobileOpen]);
+  const closeMobileMenu = () => setMobileOpen(false);
 
   return (
     <header
       className={`sticky top-0 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl ${
-        mobileOpen ? "z-[200]" : "z-50"
+        mobileOpen ? "z-[10070]" : "z-50"
       }`}
     >
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
         <div className="flex items-center gap-2">
           <button
-            ref={menuButtonRef}
             type="button"
             onClick={() => setMobileOpen((value) => !value)}
             className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-white/20 text-slate-200 md:hidden"
@@ -125,21 +100,17 @@ export function MarketingNavbar() {
       {mobileOpen && mounted
         ? createPortal(
             <>
-              <div
-                className="fixed inset-0 z-[140] cursor-pointer touch-manipulation bg-black/80 backdrop-blur-sm"
-                aria-hidden="true"
+              <button
+                type="button"
+                aria-label="Close menu"
+                className="fixed inset-0 z-[10050] m-0 cursor-pointer touch-manipulation border-0 bg-black/80 p-0 backdrop-blur-sm"
                 onPointerDown={(event) => {
                   event.preventDefault();
-                  setMobileOpen(false);
+                  event.stopPropagation();
+                  closeMobileMenu();
                 }}
-                onClick={() => setMobileOpen(false)}
               />
-              <aside
-                ref={menuPanelRef}
-                className="fixed left-0 top-0 z-[150] flex h-screen w-[78vw] max-w-sm touch-manipulation flex-col border-r border-white/10 bg-slate-950 p-5 pt-20 shadow-2xl"
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => event.stopPropagation()}
-              >
+              <aside className="fixed left-0 top-0 z-[10060] flex h-screen w-[78vw] max-w-sm touch-manipulation flex-col border-r border-white/10 bg-slate-950 p-5 pt-20 shadow-2xl">
                 <nav className="space-y-3 text-sm text-slate-100">
                   {marketingNavLinks.map((link) => (
                     <Link

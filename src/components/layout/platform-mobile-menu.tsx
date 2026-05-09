@@ -16,7 +16,6 @@ export function PlatformMobileMenu({ items }: { items: Item[] }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -50,7 +49,7 @@ export function PlatformMobileMenu({ items }: { items: Item[] }) {
 
     if (open) {
       header.classList.add("relative");
-      header.style.zIndex = "200";
+      header.style.zIndex = "10070";
     } else {
       header.classList.remove("relative");
       header.style.zIndex = "";
@@ -62,29 +61,7 @@ export function PlatformMobileMenu({ items }: { items: Item[] }) {
     };
   }, [open]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const closeIfOutside = (event: Event) => {
-      const target = event.target as Node;
-      if (buttonRef.current?.contains(target)) {
-        return;
-      }
-      if (panelRef.current?.contains(target)) {
-        return;
-      }
-      setOpen(false);
-    };
-
-    document.addEventListener("pointerdown", closeIfOutside, true);
-    document.addEventListener("touchstart", closeIfOutside, true);
-    return () => {
-      document.removeEventListener("pointerdown", closeIfOutside, true);
-      document.removeEventListener("touchstart", closeIfOutside, true);
-    };
-  }, [open]);
+  const closeMenu = () => setOpen(false);
 
   return (
     <div className="md:hidden">
@@ -102,21 +79,17 @@ export function PlatformMobileMenu({ items }: { items: Item[] }) {
       {open && mounted
         ? createPortal(
             <>
-              <div
-                className="fixed inset-0 z-[140] cursor-pointer touch-manipulation bg-black/80 backdrop-blur-sm"
-                aria-hidden="true"
+              <button
+                type="button"
+                aria-label="Close menu"
+                className="fixed inset-0 z-[10050] m-0 cursor-pointer touch-manipulation border-0 bg-black/80 p-0 backdrop-blur-sm"
                 onPointerDown={(event) => {
                   event.preventDefault();
-                  setOpen(false);
+                  event.stopPropagation();
+                  closeMenu();
                 }}
-                onClick={() => setOpen(false)}
               />
-              <aside
-                ref={panelRef}
-                className="fixed left-0 top-0 z-[150] flex h-screen w-[78vw] max-w-sm touch-manipulation flex-col border-r border-white/10 bg-slate-950 p-5 pt-20 shadow-2xl"
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => event.stopPropagation()}
-              >
+              <aside className="fixed left-0 top-0 z-[10060] flex h-screen w-[78vw] max-w-sm touch-manipulation flex-col border-r border-white/10 bg-slate-950 p-5 pt-20 shadow-2xl">
                 <nav className="space-y-2 text-sm text-slate-100">
                   {items.map((item) => (
                     <Link
